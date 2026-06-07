@@ -1,0 +1,12 @@
+﻿node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.vercel
+.DS_Store
+Thumbs.db
+frontend/dist/
+backend/node_modules/
+frontend/node_modules/
