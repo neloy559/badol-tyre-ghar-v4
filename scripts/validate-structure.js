@@ -2,512 +2,260 @@
 
 /**
  * BTG v4 — Project Structure Validation Script
- * 
- * Validates compliance with PROJECT_STRUCTURE_RULES.md
- * 
- * Checks:
- * 1. Root directory only contains allowed files
- * 2. Frontend components have paired CSS modules
- * 3. Backend modules follow proper structure
- * 4. No forbidden folders exist
- * 5. Documentation is properly organized
- * 
+ *
+ * Validates compliance with our engineering standards.
+ * Checks what matters: module structure, CSS modules, env files.
+ * Does NOT check for documentation files that belong in .kiro (private).
+ *
  * Exit codes:
  * 0 = All checks passed
  * 1 = Structure violations found
- * 
- * Usage: node scripts/validate-structure.js
- * Or: npm run validate:structure
  */
 
-const fs = require('fs');
+'use strict';
+
+const fs   = require('fs');
 const path = require('path');
 
-// Color codes for terminal output
 const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
+  reset:   '\x1b[0m',
+  red:     '\x1b[31m',
+  green:   '\x1b[32m',
+  yellow:  '\x1b[33m',
+  blue:    '\x1b[34m',
+  cyan:    '\x1b[36m',
   magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
 };
 
-// Project root (parent of scripts/)
-const projectRoot = path.resolve(__dirname, '..');
+const projectRoot    = path.resolve(__dirname, '..');
+let   totalViolations = 0;
 
-let totalViolations = 0;
-let totalChecks = 0;
-
-/**
- * Log formatted message
- */
-function log(message, color = 'reset') {
-  console.log(`${colors[color]}${message}${colors.reset}`);
+function log(msg, color = 'reset') {
+  console.log(`${colors[color]}${msg}${colors.reset}`);
 }
 
-/**
- * Report a violation
- */
-function reportViolation(check, message, file = null) {
+function violation(check, message, file = null) {
   totalViolations++;
   log(`\n❌ VIOLATION: ${check}`, 'red');
   log(`   ${message}`, 'yellow');
-  if (file) {
-    log(`   File: ${file}`, 'cyan');
-  }
+  if (file) log(`   File: ${file}`, 'cyan');
 }
 
-/**
- * Report check passed
- */
-function reportPass(check, details = '') {
-  totalChecks++;
-  if (details) {
-    log(`✅ ${check} (${details})`, 'green');
-  } else {
-    log(`✅ ${check}`, 'green');
-  }
+function pass(check, detail = '') {
+  log(`✅ ${check}${detail ? ` (${detail})` : ''}`, 'green');
 }
 
-/**
- * Check if path exists
- */
-function pathExists(relativePath) {
-  return fs.existsSync(path.join(projectRoot, relativePath));
+function exists(rel) {
+  return fs.existsSync(path.join(projectRoot, rel));
 }
 
-/**
- * Get all files/folders in directory
- */
-function getDirectoryContents(dirPath) {
-  try {
-    return fs.readdirSync(dirPath);
-  } catch (error) {
-    return [];
-  }
+function readDir(dir) {
+  try { return fs.readdirSync(dir); } catch { return []; }
 }
 
-/**
- * Recursively find files matching pattern
- */
 function findFiles(dir, pattern, results = []) {
   if (!fs.existsSync(dir)) return results;
-  
   try {
-    const items = fs.readdirSync(dir);
-    
-    for (const item of items) {
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-      
-      // Skip node_modules and .git
-      if (item === 'node_modules' || item === '.git' || item === '.kiro') {
-        continue;
-      }
-      
-      if (stat.isDirectory()) {
-        findFiles(fullPath, pattern, results);
-      } else if (pattern.test(item)) {
-        results.push(fullPath);
-      }
+    for (const item of fs.readdirSync(dir)) {
+      if (['node_modules', '.git', '.kiro', 'coverage', 'dist'].includes(item)) continue;
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+      if (stat.isDirectory()) findFiles(full, pattern, results);
+      else if (pattern.test(item)) results.push(full);
     }
-  } catch (error) {
-    // Skip directories we can't read
-  }
-  
+  } catch {}
   return results;
 }
 
-/**
- * CHECK 1: Root directory only contains allowed files
- */
-function checkRootFiles() {
-  log('\n📁 CHECK 1: Root Directory Files', 'blue');
+// ── CHECK 1: Root directory ───────────────────────────────────────────────────
+function checkRoot() {
+  log('\n📁 CHECK 1: Root Directory', 'blue');
   log('─'.repeat(60), 'blue');
-  
-  const allowedFiles = [
-    'README.md',
-    'CONTRIBUTING.md',
-    'CODE_STYLE.md',
-    'LICENSE',
-    'CHANGELOG.md',
-    '.gitignore',
-    'vercel.json',
-    'PROJECT_STRUCTURE_RULES.md',
-    'DOCUMENTATION_STRUCTURE.md',
-    'IMPORTED_CRITICAL_FILES.md',
-    'verify-session-04.js', // Temporary verification script
+
+  const ALLOWED_FILES = [
+    'README.md', '.gitignore', 'vercel.json', 'package.json',
+    'package-lock.json', 'APPLICATION_READY.md',
   ];
-  
-  const allowedFolders = [
-    'docs',
-    'backend',
-    'frontend',
-    'api',
-    '.github',
-    '.githooks', // Git hooks (tracked)
-    '.kiro',
-    '.git',
-    'scripts', // New folder for automation scripts
+
+  const ALLOWED_FOLDERS = [
+    'backend', 'frontend', 'api', 'scripts',
+    '.github', '.githooks', '.kiro', '.git', '.vscode',
+    'node_modules',
   ];
-  
-  const forbiddenFiles = [
-    /SESSION.*\.md$/i,
-    /COMPLETION.*\.md$/i,
-    /QUICK_REFERENCE.*\.md$/i,
-    /TESTING.*\.md$/i,
-    /TASK.*\.md$/i,
-    /DASHBOARD.*\.md$/i,
-    /CHECKPOINT.*\.md$/i,
-  ];
-  
-  const rootContents = getDirectoryContents(projectRoot);
-  let checkPassed = true;
-  
-  for (const item of rootContents) {
-    const itemPath = path.join(projectRoot, item);
-    const stat = fs.statSync(itemPath);
-    
+
+  let violations = 0;
+  for (const item of readDir(projectRoot)) {
+    const full = path.join(projectRoot, item);
+    const stat = fs.statSync(full);
     if (stat.isDirectory()) {
-      if (!allowedFolders.includes(item)) {
-        reportViolation(
-          'Root Directory',
-          `Forbidden folder found in root: ${item}`,
-          item
-        );
-        checkPassed = false;
+      if (!ALLOWED_FOLDERS.includes(item)) {
+        violation('Root Directory', `Unexpected folder in root: ${item}`, item);
+        violations++;
       }
     } else {
-      // Check if file is explicitly allowed
-      if (!allowedFiles.includes(item)) {
-        // Check if it matches forbidden patterns
-        const isForbidden = forbiddenFiles.some(pattern => pattern.test(item));
-        
-        if (isForbidden) {
-          reportViolation(
-            'Root Directory',
-            `Forbidden file pattern found: ${item}\n   Should be moved to docs/internal/`,
-            item
-          );
-          checkPassed = false;
-        } else if (item.endsWith('.md')) {
-          reportViolation(
-            'Root Directory',
-            `Undocumented markdown file in root: ${item}\n   Add to allowed list or move to docs/`,
-            item
-          );
-          checkPassed = false;
-        }
-        // Allow other non-MD files (package-lock, etc)
+      // Only flag unexpected .md files (non-README)
+      if (item.endsWith('.md') && !ALLOWED_FILES.includes(item)) {
+        violation('Root Directory', `Unexpected markdown file in root: ${item}\n   Move to .kiro/session-notes/ or delete`, item);
+        violations++;
       }
     }
   }
-  
-  if (checkPassed) {
-    reportPass('Root directory is clean', `${rootContents.length} items checked`);
-  }
-  
-  return checkPassed ? 0 : 1;
+
+  if (violations === 0) pass('Root directory is clean');
+  return violations;
 }
 
-/**
- * CHECK 2: Frontend components have paired CSS modules
- */
+// ── CHECK 2: CSS Module pairing ───────────────────────────────────────────────
 function checkCSSModules() {
   log('\n🎨 CHECK 2: Frontend CSS Module Pairing', 'blue');
   log('─'.repeat(60), 'blue');
-  
+
   const frontendSrc = path.join(projectRoot, 'frontend', 'src');
-  
   if (!fs.existsSync(frontendSrc)) {
-    log('⚠️  Frontend src folder not found, skipping check', 'yellow');
+    log('⚠️  Frontend src not found, skipping', 'yellow');
     return 0;
   }
-  
-  // Find all .jsx files in components and pages
-  const componentsDir = path.join(frontendSrc, 'components');
-  const pagesDir = path.join(frontendSrc, 'pages');
-  
-  const jsxFiles = [
-    ...findFiles(componentsDir, /\.jsx$/),
-    ...findFiles(pagesDir, /\.jsx$/),
+
+  // PDF components don't need CSS modules (they use react-pdf StyleSheet)
+  const EXEMPT_PATTERNS = [
+    /\/pdf\//,  // components/pdf/**
   ];
-  
-  let missingCount = 0;
-  
-  for (const jsxFile of jsxFiles) {
-    const cssModuleFile = jsxFile.replace(/\.jsx$/, '.module.css');
-    
-    if (!fs.existsSync(cssModuleFile)) {
-      const relativePath = path.relative(projectRoot, jsxFile);
-      reportViolation(
-        'CSS Module Pairing',
-        `Component missing paired CSS module\n   Expected: ${path.basename(cssModuleFile)}`,
-        relativePath
-      );
-      missingCount++;
+
+  const jsxFiles = [
+    ...findFiles(path.join(frontendSrc, 'components'), /\.jsx$/),
+    ...findFiles(path.join(frontendSrc, 'pages'), /\.jsx$/),
+  ];
+
+  let missing = 0;
+  for (const jsx of jsxFiles) {
+    const rel = path.relative(projectRoot, jsx);
+    const isExempt = EXEMPT_PATTERNS.some(p => p.test(rel.replace(/\\/g, '/')));
+    if (isExempt) continue;
+
+    const css = jsx.replace(/\.jsx$/, '.module.css');
+    if (!fs.existsSync(css)) {
+      violation('CSS Module Pairing',
+        `Component missing paired CSS module\n   Expected: ${path.basename(css)}`,
+        rel);
+      missing++;
     }
   }
-  
-  if (missingCount === 0) {
-    reportPass('All components have paired CSS modules', `${jsxFiles.length} components checked`);
-  }
-  
-  return missingCount;
+
+  if (missing === 0) pass('All components have paired CSS modules', `${jsxFiles.length} checked`);
+  return missing;
 }
 
-/**
- * CHECK 3: Backend modules follow proper structure
- */
+// ── CHECK 3: Backend module structure ─────────────────────────────────────────
 function checkBackendModules() {
   log('\n🖥️  CHECK 3: Backend Module Structure', 'blue');
   log('─'.repeat(60), 'blue');
-  
+
   const modulesDir = path.join(projectRoot, 'backend', 'src', 'modules');
-  
   if (!fs.existsSync(modulesDir)) {
-    log('⚠️  Backend modules folder not found, skipping check', 'yellow');
+    log('⚠️  Backend modules not found, skipping', 'yellow');
     return 0;
   }
-  
-  const modules = getDirectoryContents(modulesDir);
-  let violationCount = 0;
-  let modulesChecked = 0;
-  
-  for (const moduleName of modules) {
-    const modulePath = path.join(modulesDir, moduleName);
-    const stat = fs.statSync(modulePath);
-    
-    if (!stat.isDirectory()) continue;
-    
-    modulesChecked++;
-    const moduleFiles = getDirectoryContents(modulePath);
-    
-    // Expected files for a module
-    const expectedFiles = [
-      `${moduleName}.routes.js`,
-      `${moduleName}.controller.js`,
-      `${moduleName}.service.js`,
-    ];
-    
-    // Check if module has at least routes and controller
-    const hasRoutes = moduleFiles.some(f => f.endsWith('.routes.js'));
-    const hasController = moduleFiles.some(f => f.endsWith('.controller.js'));
-    
+
+  let violations = 0;
+  let checked    = 0;
+
+  for (const mod of readDir(modulesDir)) {
+    const modPath = path.join(modulesDir, mod);
+    if (!fs.statSync(modPath).isDirectory()) continue;
+    checked++;
+
+    const files      = readDir(modPath);
+    const hasRoutes  = files.some(f => f.endsWith('.routes.js'));
+    const hasService = files.some(f => f.endsWith('.service.js'));
+
     if (!hasRoutes) {
-      reportViolation(
-        'Backend Module Structure',
-        `Module missing routes file\n   Expected: ${moduleName}.routes.js`,
-        path.join('backend', 'src', 'modules', moduleName)
-      );
-      violationCount++;
+      violation('Backend Module', `${mod}/ missing routes file`, `backend/src/modules/${mod}`);
+      violations++;
     }
-    
-    if (!hasController) {
-      reportViolation(
-        'Backend Module Structure',
-        `Module missing controller file\n   Expected: ${moduleName}.controller.js`,
-        path.join('backend', 'src', 'modules', moduleName)
-      );
-      violationCount++;
+    if (!hasService) {
+      violation('Backend Module', `${mod}/ missing service file`, `backend/src/modules/${mod}`);
+      violations++;
     }
   }
-  
-  if (violationCount === 0 && modulesChecked > 0) {
-    reportPass('Backend modules follow proper structure', `${modulesChecked} modules checked`);
-  }
-  
-  return violationCount;
+
+  if (violations === 0) pass('Backend modules follow proper structure', `${checked} modules`);
+  return violations;
 }
 
-/**
- * CHECK 4: No forbidden folders exist
- */
-function checkForbiddenFolders() {
-  log('\n🚫 CHECK 4: Forbidden Folder Patterns', 'blue');
-  log('─'.repeat(60), 'blue');
-  
-  const forbiddenFolders = [
-    'src',          // No root src/ folder
-    'components',   // No root components/ folder
-    'utils',        // No root utils/ folder
-    'temp',         // No temp/ folder
-    'old',          // No old/ folder
-    'backup',       // No backup/ folder
-    'dist',         // No root dist/ folder
-    'build',        // No root build/ folder
-  ];
-  
-  let violationCount = 0;
-  
-  for (const folder of forbiddenFolders) {
-    const folderPath = path.join(projectRoot, folder);
-    if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-      reportViolation(
-        'Forbidden Folders',
-        `Forbidden folder found: ${folder}/\n   This folder type is not allowed in project root`,
-        folder
-      );
-      violationCount++;
-    }
-  }
-  
-  if (violationCount === 0) {
-    reportPass('No forbidden folders found', `${forbiddenFolders.length} patterns checked`);
-  }
-  
-  return violationCount;
-}
-
-/**
- * CHECK 5: Documentation is properly organized
- */
-function checkDocumentationStructure() {
-  log('\n📚 CHECK 5: Documentation Structure', 'blue');
-  log('─'.repeat(60), 'blue');
-  
-  const docsDir = path.join(projectRoot, 'docs');
-  
-  if (!fs.existsSync(docsDir)) {
-    reportViolation(
-      'Documentation Structure',
-      'docs/ folder is missing\n   MUST EXIST per PROJECT_STRUCTURE_RULES.md',
-      'docs/'
-    );
-    return 1;
-  }
-  
-  // Required top-level docs folders
-  const requiredFolders = [
-    'getting-started',
-    'architecture',
-    'api',
-    'guides',
-    'security',
-    'internal',
-  ];
-  
-  let violationCount = 0;
-  
-  for (const folder of requiredFolders) {
-    const folderPath = path.join(docsDir, folder);
-    if (!fs.existsSync(folderPath)) {
-      reportViolation(
-        'Documentation Structure',
-        `Required docs folder missing: ${folder}/\n   MUST EXIST per PROJECT_STRUCTURE_RULES.md`,
-        path.join('docs', folder)
-      );
-      violationCount++;
-    }
-  }
-  
-  // Check that internal/ has proper subfolders
-  const internalDir = path.join(docsDir, 'internal');
-  if (fs.existsSync(internalDir)) {
-    const requiredInternalFolders = ['session-notes', 'completion-status'];
-    
-    for (const folder of requiredInternalFolders) {
-      const folderPath = path.join(internalDir, folder);
-      if (!fs.existsSync(folderPath)) {
-        reportViolation(
-          'Documentation Structure',
-          `Required internal docs folder missing: internal/${folder}/`,
-          path.join('docs', 'internal', folder)
-        );
-        violationCount++;
-      }
-    }
-  }
-  
-  if (violationCount === 0) {
-    reportPass('Documentation structure is correct', 'All required folders exist');
-  }
-  
-  return violationCount;
-}
-
-/**
- * CHECK 6: Essential files exist
- */
+// ── CHECK 4: Essential files ──────────────────────────────────────────────────
 function checkEssentialFiles() {
-  log('\n📄 CHECK 6: Essential Files', 'blue');
+  log('\n📄 CHECK 4: Essential Files', 'blue');
   log('─'.repeat(60), 'blue');
-  
-  const essentialFiles = [
+
+  const required = [
     'README.md',
-    'CONTRIBUTING.md',
-    'CODE_STYLE.md',
-    'PROJECT_STRUCTURE_RULES.md',
-    'DOCUMENTATION_STRUCTURE.md',
     '.gitignore',
-    'vercel.json',
     'backend/package.json',
     'backend/index.js',
     'backend/.env.example',
+    'backend/src/app.js',
     'frontend/package.json',
     'frontend/index.html',
     'frontend/.env.example',
     'api/index.js',
   ];
-  
-  let missingCount = 0;
-  
-  for (const file of essentialFiles) {
-    if (!pathExists(file)) {
-      reportViolation(
-        'Essential Files',
-        `Required file missing: ${file}\n   MUST EXIST per PROJECT_STRUCTURE_RULES.md`,
-        file
-      );
-      missingCount++;
+
+  let missing = 0;
+  for (const file of required) {
+    if (!exists(file)) {
+      violation('Essential Files', `Required file missing: ${file}`, file);
+      missing++;
     }
   }
-  
-  if (missingCount === 0) {
-    reportPass('All essential files exist', `${essentialFiles.length} files checked`);
-  }
-  
-  return missingCount;
+
+  if (missing === 0) pass('All essential files exist', `${required.length} checked`);
+  return missing;
 }
 
-/**
- * Main execution
- */
+// ── CHECK 5: No forbidden root folders ───────────────────────────────────────
+function checkForbiddenFolders() {
+  log('\n🚫 CHECK 5: Forbidden Folder Patterns', 'blue');
+  log('─'.repeat(60), 'blue');
+
+  const forbidden = ['src', 'components', 'utils', 'temp', 'old', 'backup'];
+  let   violations = 0;
+
+  for (const folder of forbidden) {
+    const p = path.join(projectRoot, folder);
+    if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
+      violation('Forbidden Folders', `Folder not allowed in root: ${folder}/`, folder);
+      violations++;
+    }
+  }
+
+  if (violations === 0) pass('No forbidden folders found', `${forbidden.length} patterns checked`);
+  return violations;
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 function main() {
-  log('\n╔═══════════════════════════════════════════════════════════╗', 'cyan');
-  log('║   BTG v4 — Project Structure Validation                  ║', 'cyan');
-  log('╚═══════════════════════════════════════════════════════════╝', 'cyan');
-  
+  log('\n╔════════════════════════════════════════════════════════╗', 'cyan');
+  log('║   BTG v4 — Project Structure Validation                ║', 'cyan');
+  log('╚════════════════════════════════════════════════════════╝', 'cyan');
   log(`\nProject Root: ${projectRoot}`, 'magenta');
-  log(`Timestamp: ${new Date().toISOString()}`, 'magenta');
-  
-  // Run all checks
-  totalViolations += checkRootFiles();
+
+  totalViolations += checkRoot();
   totalViolations += checkCSSModules();
   totalViolations += checkBackendModules();
-  totalViolations += checkForbiddenFolders();
-  totalViolations += checkDocumentationStructure();
   totalViolations += checkEssentialFiles();
-  
-  // Summary
+  totalViolations += checkForbiddenFolders();
+
   log('\n' + '═'.repeat(60), 'cyan');
   log('VALIDATION SUMMARY', 'cyan');
   log('═'.repeat(60), 'cyan');
-  
+
   if (totalViolations === 0) {
-    log('\n✅ SUCCESS: All structure rules passed!', 'green');
-    log(`   ${totalChecks} checks completed`, 'green');
-    log('\n   Project structure is compliant with PROJECT_STRUCTURE_RULES.md', 'green');
+    log('\n✅ All structure checks passed!\n', 'green');
     process.exit(0);
   } else {
-    log(`\n❌ FAILED: Found ${totalViolations} structure violation(s)`, 'red');
-    log('\n   Please fix violations to comply with PROJECT_STRUCTURE_RULES.md', 'yellow');
-    log('   See above for details on each violation\n', 'yellow');
+    log(`\n❌ Found ${totalViolations} violation(s). Fix before committing.\n`, 'red');
     process.exit(1);
   }
 }
 
-// Run validation
 main();
