@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "btg-v4-frontend",
   "version": "1.0.0",
   "type": "module",
@@ -9,11 +9,13 @@
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{js,jsx}\"",
     "test": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "validate:structure": "node ../scripts/validate-structure.js"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.1.6",
     "lucide-react": "^0.475.0",
+    "pako": "^2.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1",

@@ -1,0 +1,17 @@
+/* Reset + base only — nothing else */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; }
+img { max-width: 100%; }
+
+/* Global page loader — used by Suspense fallback and ProtectedRoute */
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+}

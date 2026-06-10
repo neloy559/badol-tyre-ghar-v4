@@ -1,12 +1,51 @@
-﻿node_modules/
+﻿# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Build outputs
 dist/
+frontend/dist/
+
+# Environment files
 .env
 .env.*
 !.env.example
+
+# Logs
 *.log
+logs/
+
+# Deployment
 .vercel
+
+# OS files
 .DS_Store
 Thumbs.db
-frontend/dist/
-backend/node_modules/
-frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# Test coverage
+coverage/
+backend/coverage/
+frontend/coverage/
+
+# Temporary / build scripts
+scripts/package-lock.json
+
+# Internal documentation (private session notes, AI conversations)
+docs/internal/
+SESSION_*.md
+COMPLETION_*.md
+TASK_*.md
+verify-session-*.js
+verify-*.js
+
+# Kiro AI — entire .kiro folder is private (steering, agents, session prompts)
+# README and docs are generated from steering knowledge, not the raw files
+.kiro/
+
+# Internal session notes and AI conversation artifacts
+docs/internal/

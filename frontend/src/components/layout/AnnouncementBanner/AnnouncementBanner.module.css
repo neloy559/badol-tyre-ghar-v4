@@ -1,0 +1,65 @@
+.banner {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 150; /* above content, below navbar */
+}
+
+.message {
+  flex: 1;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  color: inherit;
+}
+
+.closeBtn:hover { opacity: 1; }
+
+/* Banner type variants */
+.info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.warning {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border-bottom: 1px solid #fcd34d;
+}
+
+.success {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.danger {
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+  border-bottom: 1px solid #fca5a5;
+}
+
+@media (max-width: 480px) {
+  .banner {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+}

@@ -1,0 +1,159 @@
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ── Main image wrapper ──────────────────────── */
+
+.mainWrapper {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow: hidden;
+  user-select: none;
+  touch-action: pan-y; /* allow vertical scroll, intercept horizontal swipe */
+}
+
+.mainImageContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* 1:1 square */
+  overflow: hidden;
+}
+
+.mainImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.25s ease;
+}
+
+.mainImage.fallback {
+  object-fit: contain;
+  padding: 2rem;
+  opacity: 0.45;
+}
+
+/* ── Nav arrow buttons ───────────────────────── */
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 3;
+  box-shadow: var(--shadow-sm);
+}
+
+.navButton:hover {
+  background: var(--color-white);
+  box-shadow: var(--shadow-md);
+}
+
+.prev { left: 0.75rem; }
+.next { right: 0.75rem; }
+
+/* ── Dot indicators (visible on mobile too) ──── */
+
+.dots {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.dotActive {
+  background: var(--color-white);
+  width: 22px;
+  border-radius: 4px;
+}
+
+/* ── Thumbnails — desktop ────────────────────── */
+
+.thumbnails {
+  display: flex;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.thumbnails::-webkit-scrollbar {
+  height: 4px;
+}
+.thumbnails::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.18s;
+  background: var(--color-surface);
+  padding: 0;
+}
+
+.thumbnail:hover {
+  border-color: var(--color-border);
+}
+
+.thumbnail.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Mobile ──────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Hide thumbnails on mobile — dots are enough */
+  .thumbnails {
+    display: none;
+  }
+
+  /* Slightly smaller nav buttons on mobile */
+  .navButton {
+    width: 32px;
+    height: 32px;
+  }
+}
