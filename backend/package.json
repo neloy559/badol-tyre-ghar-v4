@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon --env-file=.env index.js",
-    "start": "node --env-file=.env index.js",
+    "start": "node index.js",
     "test": "jest --testEnvironment node --coverage",
     "test:watch": "jest --testEnvironment node --watch",
     "validate:structure": "node ../scripts/validate-structure.js"
