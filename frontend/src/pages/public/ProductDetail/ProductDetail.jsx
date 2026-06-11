@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ShoppingBag, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
+import { useViewAs } from '../../../context/ViewAsContext';
 import useFetch from '../../../hooks/useFetch';
 import { formatPrice, getCategorySlug } from '../../../utils/formatters';
 import { WHATSAPP_NUMBER } from '../../../utils/constants';
@@ -37,11 +38,17 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { user, isDealer, loading: authLoading } = useAuth();
   const { addToCart } = useCart();
+  const { viewAsDealer } = useViewAs();
 
   const [selectedVariantSku, setSelectedVariantSku] = useState(null);
   const [addedToCart, setAddedToCart]               = useState(false);
 
-  const { data: product, loading, error } = useFetch(`/catalog/${slug}`, !authLoading);
+  // Append viewAs param if admin is previewing as a dealer
+  const productPath = viewAsDealer
+    ? `/catalog/${slug}?viewAs=${viewAsDealer._id}`
+    : `/catalog/${slug}`;
+
+  const { data: product, loading, error } = useFetch(productPath, !authLoading);
 
   // Auto-select first variant when product loads / changes
   useEffect(() => {

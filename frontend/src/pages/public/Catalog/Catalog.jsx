@@ -5,6 +5,7 @@ import { Download, SlidersHorizontal } from 'lucide-react';
 import useFetch from '../../../hooks/useFetch';
 import { usePdfDownload } from '../../../hooks/usePdfDownload';
 import { useAuth } from '../../../context/AuthContext';
+import { useViewAs } from '../../../context/ViewAsContext';
 import ProductGrid from '../../../components/catalog/ProductGrid/ProductGrid';
 import FilterSidebar from '../../../components/catalog/FilterSidebar/FilterSidebar';
 import SearchInput from '../../../components/ui/SearchInput/SearchInput';
@@ -18,6 +19,7 @@ export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { download, generating, canDownload } = usePdfDownload();
   const { loading: authLoading } = useAuth();
+  const { viewAsDealer } = useViewAs();
   const [showFilters, setShowFilters] = useState(false);
 
   const page = parseInt(searchParams.get('page') || '1', 10);
@@ -25,7 +27,6 @@ export default function Catalog() {
   const category = searchParams.get('category') || '';
   const brand = searchParams.get('brand') || '';
 
-  // Count active filters for badge
   const activeFilterCount = (category ? category.split(',').length : 0) + (brand ? brand.split(',').length : 0);
 
   const queryString = new URLSearchParams({
@@ -33,7 +34,9 @@ export default function Catalog() {
     limit: PAGINATION_LIMIT.toString(),
     ...(search && { search }),
     ...(category && { category }),
-    ...(brand && { brand })
+    ...(brand && { brand }),
+    // viewAs: admin previewing as a specific dealer
+    ...(viewAsDealer && { viewAs: viewAsDealer._id }),
   }).toString();
 
   const { data, loading, error } = useFetch(`/catalog?${queryString}`, !authLoading);

@@ -3,6 +3,7 @@
 const catalogService = require('./catalog.service');
 const sendResponse   = require('../../utils/sendResponse');
 const Product        = require('./Product.model');
+const User           = require('../users/User.model');
 const { createAuditLog } = require('../../utils/auditLogger');
 const { validateQueryParams, sanitizeInteger } = require('../../utils/validators');
 
@@ -13,24 +14,61 @@ function handleError(res, err) {
   return sendResponse(res, statusCode, false, message, null);
 }
 
+/**
+ * Resolves the effective user for pricing.
+ * If the requesting user is admin and ?viewAs=<userId> is provided,
+ * fetch that dealer's pricing profile and use it instead.
+ * This allows admins to preview pricing as any dealer — without logging out.
+ */
+async function resolveEffectiveUser(req) {
+  const viewAsId = req.query.viewAs;
+
+  // Only admin can use viewAs
+  if (!viewAsId || !req.user || req.user.role !== 'admin') {
+    return req.user;
+  }
+
+  try {
+    const dealer = await User
+      .findOne({ _id: viewAsId, isDeleted: false })
+      .select('role registrationStatus tier discountMultiplier')
+      .maxTimeMS(5000)
+      .lean();
+
+    if (!dealer) return req.user;
+
+    // Return a synthetic user object with dealer's pricing fields
+    return {
+      userId:             dealer._id.toString(),
+      role:               dealer.role,
+      registrationStatus: dealer.registrationStatus,
+      tier:               dealer.tier,
+      discountMultiplier: dealer.discountMultiplier || 0,
+      _viewingAs:         true, // marker for logging/debugging
+    };
+  } catch (err) {
+    console.warn('[catalog] viewAs lookup failed:', err.message);
+    return req.user;
+  }
+}
+
 exports.getProducts = async (req, res) => {
   try {
-    // Input type validation for query parameters (prevent NoSQL injection)
-    const validation = validateQueryParams(req.query, ['search', 'category', 'brand']);
-    
+    const validation = validateQueryParams(req.query, ['search', 'category', 'brand', 'viewAs']);
+
     if (!validation.valid) {
       return sendResponse(res, 400, false, validation.errors.join(', '), null);
     }
 
-    // Validate numeric query parameters
     const page = sanitizeInteger(req.query.page, 1);
     const limit = sanitizeInteger(req.query.limit, 20);
-    
+
     if (page < 1 || limit < 1 || limit > 100) {
       return sendResponse(res, 400, false, 'Invalid pagination parameters', null);
     }
 
-    const result = await catalogService.getProducts(req.query, req.user);
+    const effectiveUser = await resolveEffectiveUser(req);
+    const result = await catalogService.getProducts(req.query, effectiveUser);
     return sendResponse(res, 200, true, 'Products fetched.', {
       products: result.products,
       pagination: {
@@ -47,13 +85,13 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductBySlug = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { slug } = req.params;
     if (typeof slug !== 'string' || !slug.trim()) {
       return sendResponse(res, 400, false, 'Invalid product slug', null);
     }
 
-    const product = await catalogService.getProductBySlug(req.params.slug, req.user);
+    const effectiveUser = await resolveEffectiveUser(req);
+    const product = await catalogService.getProductBySlug(req.params.slug, effectiveUser);
     return sendResponse(res, 200, true, 'Product fetched.', product);
   } catch (err) {
     return handleError(res, err);
