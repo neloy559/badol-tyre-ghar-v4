@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /cart
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://badol-tyre-ghar.vercel.app/sitemap.xml
