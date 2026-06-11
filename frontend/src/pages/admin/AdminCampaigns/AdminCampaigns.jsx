@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
 import api from '../../../services/api';
 import { formatDate } from '../../../utils/formatters';
@@ -18,8 +19,6 @@ export default function AdminCampaigns() {
   const [editId, setEditId]       = useState(null);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState('');
-
-  useEffect(() => { document.title = 'Campaigns — BTG Admin'; }, []);
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -77,6 +76,10 @@ export default function AdminCampaigns() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Campaigns — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Campaigns</h1>

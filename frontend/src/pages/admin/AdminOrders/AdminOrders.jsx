@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { pdf } from '@react-pdf/renderer';
 import { Download } from 'lucide-react';
 import api from '../../../services/api';
@@ -36,8 +37,6 @@ export default function AdminOrders() {
   const [saving,       setSaving]       = useState(null);
   const [generatingPdf, setGeneratingPdf] = useState(null);
   const [siteConfig,   setSiteConfig]   = useState({});
-
-  useEffect(() => { document.title = 'Orders — BTG Admin'; }, []);
 
   useEffect(() => {
     api.get('/site-config')
@@ -123,6 +122,10 @@ export default function AdminOrders() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Orders — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Orders</h1>

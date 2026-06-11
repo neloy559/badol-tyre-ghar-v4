@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navbar from '../components/layout/Navbar/Navbar';
 import Footer from '../components/layout/Footer/Footer';
 import styles from './NotFound.module.css';
@@ -7,12 +8,12 @@ import styles from './NotFound.module.css';
 export default function NotFound() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.title = '404 — Page Not Found | Badol Tyre Ghar';
-  }, []);
-
   return (
     <>
+      <Helmet>
+        <title>404 — Page Not Found | Badol Tyre Ghar</title>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <Navbar />
       <div className={styles.container}>
         <div className={styles.code}>404</div>

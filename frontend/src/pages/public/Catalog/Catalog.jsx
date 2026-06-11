@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Download, SlidersHorizontal } from 'lucide-react';
 import useFetch from '../../../hooks/useFetch';
 import { usePdfDownload } from '../../../hooks/usePdfDownload';
@@ -37,10 +38,6 @@ export default function Catalog() {
 
   const { data, loading, error } = useFetch(`/catalog?${queryString}`, !authLoading);
 
-  useEffect(() => {
-    document.title = 'Catalog — Badol Tyre Ghar';
-  }, []);
-
   function handleSearchChange(newSearch) {
     const newParams = new URLSearchParams(searchParams);
     if (newSearch) {
@@ -75,8 +72,28 @@ export default function Catalog() {
   const pagination = data?.pagination || {};
   const totalProducts = pagination.total || 0;
 
+  // Build dynamic title and noindex logic
+  const pageTitle = category
+    ? `${category.charAt(0).toUpperCase() + category.slice(1)} — Catalog | Badol Tyre Ghar`
+    : search
+    ? `Search: "${search}" — Catalog | Badol Tyre Ghar`
+    : 'Product Catalog — Badol Tyre Ghar';
+
+  // noindex when search/filters are active to avoid duplicate content
+  const shouldNoIndex = !!(search || category || brand || page > 1);
+
   return (
     <>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content="Browse our full range of tyres, tubes, patches, flaps, tyre sealants and gadgets. Wholesale pricing available for approved dealers." />
+        <meta name="robots" content={shouldNoIndex ? 'noindex, follow' : 'index, follow'} />
+        {!shouldNoIndex && <link rel="canonical" href="https://badol-tyre-ghar.vercel.app/catalog" />}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content="Browse our full range of tyre products. Wholesale pricing for approved dealers." />
+        <meta property="og:url" content="https://badol-tyre-ghar.vercel.app/catalog" />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <Navbar />
       <div className={styles.container}>
         <div className={styles.header}>

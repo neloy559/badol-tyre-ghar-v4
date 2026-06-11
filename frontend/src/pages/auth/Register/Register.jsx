@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -87,8 +88,6 @@ export default function Register() {
   const [dSuccess,  setDSuccess]  = useState(false);
   const dStrength = usePasswordStrength(dPass);
 
-  useEffect(() => { document.title = 'Register — Badol Tyre Ghar'; }, []);
-
   // ── Customer submit ───────────────────────────
   async function handleCustomerSubmit(e) {
     e.preventDefault();
@@ -137,6 +136,12 @@ export default function Register() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Register — Badol Tyre Ghar</title>
+        <meta name="description" content="Register as a dealer to access wholesale pricing on tyres, tubes and accessories." />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://badol-tyre-ghar.vercel.app/register" />
+      </Helmet>
       <div className={styles.card}>
         {/* Logo */}
         <div className={styles.logoRow}>
