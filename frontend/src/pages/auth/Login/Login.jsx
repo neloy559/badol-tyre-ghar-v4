@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../services/api';
@@ -13,10 +14,6 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    document.title = 'Login — Badol Tyre Ghar';
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -60,6 +57,10 @@ export default function Login() {
 
   return (
     <div className={styles.container}>
+      <Helmet>
+        <title>Sign In — Badol Tyre Ghar</title>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Sign In</h1>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Upload, Trash2, Image } from 'lucide-react';
 import api from '../../../services/api';
 import { formatDate } from '../../../utils/formatters';
@@ -16,8 +17,6 @@ export default function AdminMedia() {
   const [uploading, setUploading] = useState(false);
   const [uploadType, setUploadType] = useState('product');
   const fileRef = useRef(null);
-
-  useEffect(() => { document.title = 'Media — BTG Admin'; }, []);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
@@ -73,6 +72,10 @@ export default function AdminMedia() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Media Library — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Media Library</h1>

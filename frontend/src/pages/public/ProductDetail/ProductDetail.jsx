@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ShoppingBag, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
@@ -48,12 +49,6 @@ export default function ProductDetail() {
       setSelectedVariantSku(product.variants[0].sku);
     }
   }, [product?._id]); // only re-run when we navigate to a different product
-
-  useEffect(() => {
-    if (product) {
-      document.title = `${product.name} — Badol Tyre Ghar`;
-    }
-  }, [product]);
 
   // Fetch related products once we know the category
   const categorySlug = product ? getCategorySlug(product.category) : null;
@@ -139,6 +134,34 @@ export default function ProductDetail() {
 
   return (
     <>
+      <Helmet>
+        <title>{product.name} — Badol Tyre Ghar</title>
+        <meta name="description" content={`${product.name}${brandName ? ` by ${brandName}` : ''}${product.specs?.size ? ` — Size: ${product.specs.size}` : ''}. Available at Badol Tyre Ghar. Wholesale pricing for approved dealers.`} />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`https://badol-tyre-ghar.vercel.app/catalog/${product.slug}`} />
+        <meta property="og:title" content={`${product.name} — Badol Tyre Ghar`} />
+        <meta property="og:description" content={`${product.name}${brandName ? ` by ${brandName}` : ''}${product.specs?.size ? `, Size: ${product.specs.size}` : ''}. Wholesale pricing available for dealers.`} />
+        <meta property="og:image" content={product.images?.[0] || 'https://badol-tyre-ghar.vercel.app/assets/branding/logo.jpeg'} />
+        <meta property="og:url" content={`https://badol-tyre-ghar.vercel.app/catalog/${product.slug}`} />
+        <meta property="og:type" content="product" />
+        <meta property="og:site_name" content="Badol Tyre Ghar" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": product.name,
+          "description": `${product.name}${brandName ? ` by ${brandName}` : ''}${product.specs?.size ? `, size ${product.specs.size}` : ''}`,
+          "image": product.images?.[0] || '',
+          "brand": brandName ? { "@type": "Brand", "name": brandName } : undefined,
+          "offers": {
+            "@type": "Offer",
+            "priceCurrency": "BDT",
+            "availability": selectedVariant?.stockStatus === 'out_of_stock'
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
+            "seller": { "@type": "Organization", "name": "Badol Tyre Ghar" }
+          }
+        })}</script>
+      </Helmet>
       <Navbar />
       <div className={styles.container}>
 

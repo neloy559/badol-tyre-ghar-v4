@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import api from '../../../services/api';
 import { Pagination } from '../../../components/ui/Pagination/Pagination';
 import useFetch from '../../../hooks/useFetch';
@@ -63,8 +64,11 @@ export default function Registrations() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Dealer Registrations — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
-        <h1 className={styles.title}>Dealer Registrations</h1>
         <p className={styles.subtitle}>Manage dealer applications and tier assignments</p>
       </div>
 

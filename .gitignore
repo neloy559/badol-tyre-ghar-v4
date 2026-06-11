@@ -16,7 +16,7 @@ frontend/dist/
 *.log
 logs/
 
-# Deployment
+# Vercel
 .vercel
 
 # OS files
@@ -49,3 +49,6 @@ verify-*.js
 
 # Internal session notes and AI conversation artifacts
 docs/internal/
+
+.vercel
+.env*

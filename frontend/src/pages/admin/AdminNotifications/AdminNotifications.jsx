@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Bell, CheckCheck } from 'lucide-react';
 import api from '../../../services/api';
 import { timeAgo } from '../../../utils/formatters';
@@ -9,8 +10,6 @@ export default function AdminNotifications() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [marking, setMarking]   = useState(false);
-
-  useEffect(() => { document.title = 'Notifications — BTG Admin'; }, []);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -44,6 +43,10 @@ export default function AdminNotifications() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Notifications — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>

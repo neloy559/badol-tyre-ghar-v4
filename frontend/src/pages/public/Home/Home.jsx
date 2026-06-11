@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ShoppingBag, Shield, Truck, Download, MessageCircle } from 'lucide-react';
 import useFetch from '../../../hooks/useFetch';
 import { usePdfDownload } from '../../../hooks/usePdfDownload';
@@ -16,10 +17,6 @@ export default function Home() {
   const { download, generating, canDownload } = usePdfDownload();
   const { loading: authLoading } = useAuth();
   const { data: featuredData, loading: featuredLoading } = useFetch('/catalog?limit=12', !authLoading);
-
-  useEffect(() => {
-    document.title = `${DEFAULT_SITE_NAME} — Wholesale Tyres & Tubes`;
-  }, []);
 
   const featuredProducts = featuredData?.products || [];
 
@@ -40,6 +37,27 @@ export default function Home() {
 
   return (
     <>
+      <Helmet>
+        <title>Badol Tyre Ghar — Wholesale Tyres & Tubes Bangladesh</title>
+        <meta name="description" content="Premium quality tyres, tubes, patches and accessories at wholesale prices. Serving approved dealers across Bangladesh with reliability and excellence." />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://badol-tyre-ghar.vercel.app/" />
+        <meta property="og:title" content="Badol Tyre Ghar — Wholesale Tyres & Tubes" />
+        <meta property="og:description" content="Premium quality tyres, tubes, patches and accessories at wholesale prices. Serving dealers across Bangladesh." />
+        <meta property="og:image" content="https://badol-tyre-ghar.vercel.app/assets/branding/logo.jpeg" />
+        <meta property="og:url" content="https://badol-tyre-ghar.vercel.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Badol Tyre Ghar" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "Badol Tyre Ghar",
+          "description": "Wholesale tyre and tube distributor serving dealers across Bangladesh",
+          "url": "https://badol-tyre-ghar.vercel.app",
+          "address": { "@type": "PostalAddress", "addressCountry": "BD" },
+          "telephone": `+${(WHATSAPP_NUMBER || '').replace(/[^0-9]/g, '')}`
+        })}</script>
+      </Helmet>
       <Navbar />
 
       {/* Hero Section */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   Eye, EyeOff, Trash2, Search, Package,
   TrendingUp, Upload, BarChart2, ChevronDown, ChevronUp, Save, Plus, X
@@ -58,6 +59,10 @@ export default function AdminCatalog() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Catalog — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.tabBar}>
         <button className={`${styles.tabBtn} ${tab === 'products'    ? styles.tabActive : ''}`} onClick={() => setTab('products')}>
           <Package size={15} /> Products
@@ -94,8 +99,6 @@ function ProductsTab() {
   const [stockModal, setStockModal]   = useState(null); // { product, variantIdx }
   const [expandedId, setExpandedId]   = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  useEffect(() => { document.title = 'Catalog — BTG Admin'; }, []);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true); setError('');

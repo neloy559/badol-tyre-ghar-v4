@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, MessageCircle } from 'lucide-react';
 import { useCart } from '../../../context/CartContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -125,6 +126,10 @@ export default function Cart() {
   if (submitted) {
     return (
       <>
+        <Helmet>
+          <title>Inquiry Submitted — Badol Tyre Ghar</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
         <Navbar />
         <div className={styles.container}>
           <div className={styles.successState}>
@@ -149,6 +154,10 @@ export default function Cart() {
   if (items.length === 0) {
     return (
       <>
+        <Helmet>
+          <title>Inquiry Cart — Badol Tyre Ghar</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
         <Navbar />
         <div className={styles.container}>
           <div className={styles.emptyState}>
@@ -172,6 +181,10 @@ export default function Cart() {
   // ── Cart with items ───────────────────────────
   return (
     <>
+      <Helmet>
+        <title>Inquiry Cart — Badol Tyre Ghar</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <Navbar />
       <div className={styles.container}>
 

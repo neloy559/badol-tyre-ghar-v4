@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Clock, Download, Award, ShoppingBag, User, Package } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -76,6 +77,10 @@ export default function Profile() {
 
   return (
     <>
+      <Helmet>
+        <title>My Profile — Badol Tyre Ghar</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <Navbar />
       <div className={styles.container}>
 

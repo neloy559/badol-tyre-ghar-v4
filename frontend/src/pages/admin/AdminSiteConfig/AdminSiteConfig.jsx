@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Save } from 'lucide-react';
 import api from '../../../services/api';
 import styles from './AdminSiteConfig.module.css';
@@ -16,7 +17,7 @@ export default function AdminSiteConfig() {
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => { document.title = 'Site Config — BTG Admin'; }, []);
+
 
   useEffect(() => {
     async function fetchConfig() {
@@ -61,6 +62,10 @@ export default function AdminSiteConfig() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Site Config — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Site Configuration</h1>

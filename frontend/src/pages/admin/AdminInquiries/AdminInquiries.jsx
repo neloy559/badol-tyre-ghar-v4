@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import api from '../../../services/api';
 import { formatDate } from '../../../utils/formatters';
 import styles from './AdminInquiries.module.css';
@@ -21,8 +22,6 @@ export default function AdminInquiries() {
   const [expandedId, setExpandedId] = useState(null);
   const [note, setNote]           = useState('');
   const [savingNote, setSavingNote] = useState(false);
-
-  useEffect(() => { document.title = 'Inquiries — BTG Admin'; }, []);
 
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
@@ -67,6 +66,10 @@ export default function AdminInquiries() {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Inquiries — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Inquiries</h1>

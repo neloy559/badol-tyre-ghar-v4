@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Package, Users, UserCheck, Clock } from 'lucide-react';
 import useFetch from '../../../hooks/useFetch';
 import { useAuth } from '../../../context/AuthContext';
@@ -13,10 +14,6 @@ import styles from './Dashboard.module.css';
 export default function Dashboard() {
   const { loading: authLoading } = useAuth();
   const { data, loading, error, refetch } = useFetch('/admin/analytics/summary', !authLoading);
-
-  React.useEffect(() => {
-    document.title = 'Dashboard — BTG Admin';
-  }, []);
 
   if (loading) {
     return (
@@ -42,6 +39,10 @@ export default function Dashboard() {
 
   return (
     <div className={styles.dashboard}>
+      <Helmet>
+        <title>Dashboard — BTG Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.header}>
         <h1 className={styles.title}>Dashboard</h1>
         <p className={styles.subtitle}>Overview of key business metrics</p>
