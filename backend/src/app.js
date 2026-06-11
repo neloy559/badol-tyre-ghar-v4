@@ -53,8 +53,12 @@ app.get('/api/v1/health', (req, res) => {
 // -- API Routes
 const apiRoutes   = require('./routes/index');
 const adminRoutes = require('./routes/admin');
+const sitemapRoutes = require('./modules/catalog/sitemap.routes');
 app.use('/api/v1', apiRoutes);
 app.use('/api/v1/admin', adminRoutes);
+
+// -- Sitemap & Robots (root level — no /api/v1 prefix, required by search engines)
+app.use('/', sitemapRoutes);
 
 // -- 404 Handler
 app.use((req, res) => {
