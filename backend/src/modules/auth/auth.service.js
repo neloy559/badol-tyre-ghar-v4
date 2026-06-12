@@ -158,16 +158,14 @@ async function login({ phone, password }, res, req) {
   validatePhoneAndPassword(phone, password);
 
   // +password re-selects the field excluded by schema default.
-  const foundUser = await User.findOne({ phone: phone.trim() })
+  // isDeleted: false at query level — avoids fetching and running bcrypt on deleted accounts.
+  const foundUser = await User.findOne({ phone: phone.trim(), isDeleted: false })
     .select('+password')
     .maxTimeMS(5000); // Security: Query timeout
 
   if (!foundUser) {
     // Generic message prevents user enumeration.
     throw { statusCode: 401, message: 'Invalid credentials.' };
-  }
-  if (foundUser.isDeleted) {
-    throw { statusCode: 403, message: 'This account has been deactivated.' };
   }
   if (foundUser.registrationStatus === 'pending') {
     throw { statusCode: 403, message: 'Your dealer application is pending approval.' };

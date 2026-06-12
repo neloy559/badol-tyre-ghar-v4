@@ -30,9 +30,9 @@ async function getDealers(filters) {
 }
 
 async function getDealerById(id) {
-  const dealer = await User.findById(id)
+  const dealer = await User.findOne({ _id: id, isDeleted: false })
     .select('-password')
-    .maxTimeMS(5000) // Security: Query timeout
+    .maxTimeMS(5000) // Security: Query timeout + exclude soft-deleted
     .lean();
   if (!dealer) {
     throw { statusCode: 404, message: 'Dealer not found.' };
@@ -41,17 +41,20 @@ async function getDealerById(id) {
 }
 
 async function approveDealer(id, adminId) {
+  // Security: only dealers can be approved — prevent admin/editor escalation
+  const target = await User.findOne({ _id: id, role: 'dealer', isDeleted: false })
+    .maxTimeMS(5000).lean();
+  if (!target) {
+    throw { statusCode: 404, message: 'Dealer not found.' };
+  }
+
   const dealer = await User.findByIdAndUpdate(
     id,
     { registrationStatus: 'approved', isVerified: true, tier: 'standard' },
     { new: true }
   )
   .select('-password')
-  .maxTimeMS(5000); // Security: Query timeout
-
-  if (!dealer) {
-    throw { statusCode: 404, message: 'Dealer not found.' };
-  }
+  .maxTimeMS(5000);
 
   await createAuditLog({
     adminId,
@@ -71,17 +74,20 @@ async function approveDealer(id, adminId) {
 }
 
 async function rejectDealer(id, reason, adminId) {
+  // Security: only dealers can be rejected
+  const target = await User.findOne({ _id: id, role: 'dealer', isDeleted: false })
+    .maxTimeMS(5000).lean();
+  if (!target) {
+    throw { statusCode: 404, message: 'Dealer not found.' };
+  }
+
   const dealer = await User.findByIdAndUpdate(
     id,
     { registrationStatus: 'rejected', rejectionReason: reason },
     { new: true }
   )
   .select('-password')
-  .maxTimeMS(5000); // Security: Query timeout
-
-  if (!dealer) {
-    throw { statusCode: 404, message: 'Dealer not found.' };
-  }
+  .maxTimeMS(5000);
 
   await createAuditLog({
     adminId,

@@ -154,12 +154,12 @@ exports.getAnalyticsSummary = async (req, res) => {
         { $project: { brand: '$brand.name', count: 1 } },
         { $sort: { count: -1 } },
         { $limit: 10 }
-      ]),
+      ]).option({ maxTimeMS: 5000 }), // Security: Query timeout
       User.aggregate([
         { $match: { role: 'dealer', createdAt: { $gte: thirtyDaysAgo } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
-      ]),
+      ]).option({ maxTimeMS: 5000 }), // Security: Query timeout
       Product.find({ isDeleted: false })
         .sort({ viewCount: -1 })
         .limit(5)

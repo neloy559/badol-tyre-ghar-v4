@@ -85,13 +85,13 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductBySlug = async (req, res) => {
   try {
-    const { slug } = req.params;
-    if (typeof slug !== 'string' || !slug.trim()) {
-      return sendResponse(res, 400, false, 'Invalid product slug', null);
+    // Admin catalog uses /:id param — can be slug or ObjectId
+    const identifier = req.params.id || req.params.slug;
+    if (typeof identifier !== 'string' || !identifier.trim()) {
+      return sendResponse(res, 400, false, 'Invalid product identifier.', null);
     }
-
     const effectiveUser = await resolveEffectiveUser(req);
-    const product = await catalogService.getProductBySlug(req.params.slug, effectiveUser);
+    const product = await catalogService.getProductBySlug(identifier, effectiveUser);
     return sendResponse(res, 200, true, 'Product fetched.', product);
   } catch (err) {
     return handleError(res, err);

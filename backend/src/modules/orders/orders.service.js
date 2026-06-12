@@ -13,6 +13,12 @@ const User    = require('../users/User.model');
  * @returns {Promise<object>} Created order
  */
 async function createOrderFromInquiry(inquiryId) {
+  // Guard: prevent duplicate orders for the same inquiry
+  const existingOrder = await Order.findOne({ inquiryId }).maxTimeMS(5000).lean();
+  if (existingOrder) {
+    throw { statusCode: 409, message: 'An order already exists for this inquiry.' };
+  }
+
   const inquiry = await Inquiry.findById(inquiryId)
     .populate('user', 'profile phone')
     .populate('items.productId', 'name variants')

@@ -23,8 +23,8 @@ const { getDiscountPercent } = require('./tierPricingService');
 async function computePrice(variant, user, activeCampaigns = [], product = null) {
   // Security: pending/rejected dealers must NOT receive wholesale pricing.
   // A dealer is only eligible if explicitly approved — role alone is insufficient.
-  const isDealerRole = user && (user.role === 'dealer' || user.role === 'sales_partner') &&
-                       user.registrationStatus === 'approved';
+  // Note: 'sales_partner' role does not exist in the User schema and is dead code — removed.
+  const isDealerRole = user && user.role === 'dealer' && user.registrationStatus === 'approved';
   const isAdminRole  = user && (user.role === 'admin' || user.role === 'editor');
 
   // Step 1: Base price selection

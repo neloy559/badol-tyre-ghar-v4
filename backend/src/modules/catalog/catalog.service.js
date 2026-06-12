@@ -135,15 +135,42 @@ function generateSlug(name) {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
+// Fields an admin/editor is allowed to set when creating a product.
+// Excludes: isDeleted (soft-delete only), viewCount (system-managed)
+const PRODUCT_CREATE_FIELDS = [
+  'name', 'sku', 'slug', 'description', 'category', 'brand',
+  'images', 'specs', 'variants', 'searchTags',
+  'isVisible', 'showPrice',
+];
+
+// Fields an admin/editor is allowed to update on an existing product.
+// Excludes: isDeleted (use softDeleteProduct), viewCount (system-managed)
+const PRODUCT_UPDATE_FIELDS = [
+  'name', 'sku', 'description', 'category', 'brand',
+  'images', 'specs', 'variants', 'searchTags',
+  'isVisible', 'showPrice',
+];
+
 async function createProduct(data) {
-  if (!data.slug) {
-    data.slug = generateSlug(data.name);
+  // Whitelist: only allow permitted fields — prevent isDeleted, viewCount injection
+  const sanitized = {};
+  for (const key of PRODUCT_CREATE_FIELDS) {
+    if (data[key] !== undefined) sanitized[key] = data[key];
   }
-  return Product.create(data);
+  if (!sanitized.slug && sanitized.name) {
+    sanitized.slug = generateSlug(sanitized.name);
+  }
+  return Product.create(sanitized);
 }
 
 async function updateProduct(id, data) {
-  const product = await Product.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true })
+  // Whitelist: only allow permitted update fields
+  const update = {};
+  for (const key of PRODUCT_UPDATE_FIELDS) {
+    if (data[key] !== undefined) update[key] = data[key];
+  }
+
+  const product = await Product.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true })
     .maxTimeMS(5000);
   if (!product) {
     throw { statusCode: 404, message: 'Product not found.' };
@@ -213,6 +240,17 @@ async function toggleShowPrice(id, showPrice) {
 }
 
 async function bulkMarkup({ categoryId, brandId, adjustmentType, adjustmentValue }) {
+  // Security: validate inputs before touching any price data
+  if (!['percent', 'flat'].includes(adjustmentType)) {
+    throw { statusCode: 400, message: 'adjustmentType must be "percent" or "flat".' };
+  }
+  if (typeof adjustmentValue !== 'number' || isNaN(adjustmentValue) || !isFinite(adjustmentValue)) {
+    throw { statusCode: 400, message: 'adjustmentValue must be a valid number.' };
+  }
+  // Cap percent to -99..+200 and flat to -1,000,000..+1,000,000 to prevent absurd values
+  if (adjustmentType === 'percent' && (adjustmentValue < -99 || adjustmentValue > 200)) {
+    throw { statusCode: 400, message: 'Percent adjustment must be between -99 and 200.' };
+  }
   const query = { isDeleted: false };
   if (categoryId) query.category = categoryId;
   if (brandId) query.brand = brandId;

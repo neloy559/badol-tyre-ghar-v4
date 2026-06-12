@@ -71,19 +71,12 @@ const userSchema = new mongoose.Schema(
 // Used in: POST /auth/login, POST /auth/register
 // phone index handled by unique: true in schema field
 
-// email: Sparse unique index (optional field, but must be unique when present)
-// Used in: User lookups, admin user management
-// Note: 'sparse' allows multiple null values while enforcing uniqueness for non-null values
-userSchema.index({ email: 1 }, { unique: true, sparse: true });
-
 // role + registrationStatus: Compound index for admin queries
-// Used in: GET /admin/users (filtering by role and approval status)
-// Example: Find all pending dealers, all approved customers, etc.
+// Used in: GET /admin/dealers (filtering by role and approval status)
 userSchema.index({ role: 1, registrationStatus: 1 });
 
 // isDeleted: Index for soft-delete filtering
 // Used in: All user queries to exclude deleted users
-// Prevents full collection scans when filtering deleted records
 userSchema.index({ isDeleted: 1 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
