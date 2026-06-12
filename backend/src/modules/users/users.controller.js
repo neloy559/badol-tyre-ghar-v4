@@ -5,7 +5,7 @@ const sendResponse = require('../../utils/sendResponse');
 const User = require('./User.model');
 const Product = require('../catalog/Product.model');
 const AuditLog = require('../../utils/AuditLog.model');
-const { validateInputTypes, validateQueryParams, sanitizeInteger } = require('../../utils/validators');
+const { validateInputTypes, validateQueryParams, sanitizeInteger, isValidObjectId } = require('../../utils/validators');
 
 function handleError(res, err) {
   const statusCode = err.statusCode || 500;
@@ -42,13 +42,11 @@ exports.getDealers = async (req, res) => {
 
 exports.getDealerById = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { id } = req.params;
-    if (typeof id !== 'string' || !id.trim()) {
-      return sendResponse(res, 400, false, 'Invalid dealer ID', null);
+    if (!isValidObjectId(id)) {
+      return sendResponse(res, 400, false, 'Invalid dealer ID format.', null);
     }
-
-    const dealer = await usersService.getDealerById(req.params.id);
+    const dealer = await usersService.getDealerById(id);
     return sendResponse(res, 200, true, 'Dealer fetched.', dealer);
   } catch (err) {
     return handleError(res, err);
@@ -57,13 +55,11 @@ exports.getDealerById = async (req, res) => {
 
 exports.approveDealer = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { id } = req.params;
-    if (typeof id !== 'string' || !id.trim()) {
-      return sendResponse(res, 400, false, 'Invalid dealer ID', null);
+    if (!isValidObjectId(id)) {
+      return sendResponse(res, 400, false, 'Invalid dealer ID format.', null);
     }
-
-    const dealer = await usersService.approveDealer(req.params.id, req.user.userId);
+    const dealer = await usersService.approveDealer(id, req.user.userId);
     return sendResponse(res, 200, true, 'Dealer approved.', dealer);
   } catch (err) {
     return handleError(res, err);
@@ -72,20 +68,20 @@ exports.approveDealer = async (req, res) => {
 
 exports.rejectDealer = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return sendResponse(res, 400, false, 'Invalid dealer ID format.', null);
+    }
     const { rejectionReason } = req.body;
-    
     const validation = validateInputTypes({
-      id: { value: id, type: 'string', required: true },
       rejectionReason: { value: rejectionReason, type: 'string', required: false },
     });
-
     if (!validation.valid) {
       return sendResponse(res, 400, false, validation.errors.join(', '), null);
     }
-
-    const dealer = await usersService.rejectDealer(req.params.id, req.body.rejectionReason, req.user.userId);
+    // Cap rejection reason length
+    const reason = (rejectionReason || '').trim().slice(0, 500);
+    const dealer = await usersService.rejectDealer(id, reason, req.user.userId);
     return sendResponse(res, 200, true, 'Dealer rejected.', dealer);
   } catch (err) {
     return handleError(res, err);
@@ -94,20 +90,18 @@ exports.rejectDealer = async (req, res) => {
 
 exports.changeTier = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return sendResponse(res, 400, false, 'Invalid dealer ID format.', null);
+    }
     const { tier } = req.body;
-    
     const validation = validateInputTypes({
-      id: { value: id, type: 'string', required: true },
       tier: { value: tier, type: 'string', required: true },
     });
-
     if (!validation.valid) {
       return sendResponse(res, 400, false, validation.errors.join(', '), null);
     }
-
-    const dealer = await usersService.changeTier(req.params.id, req.body.tier, req.user.userId);
+    const dealer = await usersService.changeTier(id, tier, req.user.userId);
     return sendResponse(res, 200, true, 'Tier changed.', dealer);
   } catch (err) {
     return handleError(res, err);
@@ -116,13 +110,11 @@ exports.changeTier = async (req, res) => {
 
 exports.softDeleteDealer = async (req, res) => {
   try {
-    // Input type validation (prevent NoSQL injection)
     const { id } = req.params;
-    if (typeof id !== 'string' || !id.trim()) {
-      return sendResponse(res, 400, false, 'Invalid dealer ID', null);
+    if (!isValidObjectId(id)) {
+      return sendResponse(res, 400, false, 'Invalid dealer ID format.', null);
     }
-
-    const dealer = await usersService.softDeleteDealer(req.params.id, req.user.userId);
+    const dealer = await usersService.softDeleteDealer(id, req.user.userId);
     return sendResponse(res, 200, true, 'Dealer deleted.', dealer);
   } catch (err) {
     return handleError(res, err);

@@ -201,6 +201,16 @@ function sanitizeInteger(value, defaultValue = 0, radix = 10) {
   return isNumber(parsed) ? parsed : defaultValue;
 }
 
+/**
+ * Validate that a value is a valid MongoDB ObjectId (24-character hex string).
+ * Prevents Mongoose CastError from propagating as 500 errors.
+ * @param {*} value
+ * @returns {boolean}
+ */
+function isValidObjectId(value) {
+  return typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
+}
+
 module.exports = {
   // Core validators
   isNonEmptyString,
@@ -208,6 +218,7 @@ module.exports = {
   isNumber,
   isBoolean,
   isArray,
+  isValidObjectId,
 
   // Batch validators
   validateInputTypes,

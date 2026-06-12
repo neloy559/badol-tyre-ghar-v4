@@ -9,12 +9,21 @@ async function getDealers(filters) {
   const limit = parseInt(filters.limit, 10) || 20;
   const skip  = (page - 1) * limit;
 
+  const VALID_STATUSES = ['approved', 'pending', 'rejected'];
+  const VALID_TIERS    = ['standard', 'silver', 'gold', 'platinum'];
+
   const query = { role: 'dealer', isDeleted: false };
 
   if (filters.registrationStatus) {
+    if (!VALID_STATUSES.includes(filters.registrationStatus)) {
+      throw { statusCode: 400, message: 'Invalid registrationStatus filter.' };
+    }
     query.registrationStatus = filters.registrationStatus;
   }
   if (filters.tier) {
+    if (!VALID_TIERS.includes(filters.tier)) {
+      throw { statusCode: 400, message: 'Invalid tier filter.' };
+    }
     query.tier = filters.tier;
   }
 
@@ -107,9 +116,14 @@ async function rejectDealer(id, reason, adminId) {
 }
 
 async function changeTier(id, tier, adminId) {
-  const dealer = await User.findById(id)
+  const VALID_TIERS = ['standard', 'silver', 'gold', 'platinum'];
+  if (!VALID_TIERS.includes(tier)) {
+    throw { statusCode: 400, message: 'Invalid tier value.' };
+  }
+  // Security: only dealers can have their tier changed
+  const dealer = await User.findOne({ _id: id, role: 'dealer', isDeleted: false })
     .select('-password')
-    .maxTimeMS(5000); // Security: Query timeout
+    .maxTimeMS(5000);
   if (!dealer) {
     throw { statusCode: 404, message: 'Dealer not found.' };
   }
@@ -129,9 +143,16 @@ async function changeTier(id, tier, adminId) {
 }
 
 async function softDeleteDealer(id, adminId) {
+  // Security: only dealers can be soft-deleted via this endpoint
+  const target = await User.findOne({ _id: id, role: 'dealer', isDeleted: false })
+    .maxTimeMS(5000).lean();
+  if (!target) {
+    throw { statusCode: 404, message: 'Dealer not found.' };
+  }
+
   const dealer = await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true })
     .select('-password')
-    .maxTimeMS(5000); // Security: Query timeout
+    .maxTimeMS(5000);
   if (!dealer) {
     throw { statusCode: 404, message: 'Dealer not found.' };
   }

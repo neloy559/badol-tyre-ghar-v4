@@ -28,6 +28,12 @@ async function resolveEffectiveUser(req) {
     return req.user;
   }
 
+  // Security: validate ObjectId format before DB query
+  const { isValidObjectId } = require('../../utils/validators');
+  if (!isValidObjectId(viewAsId)) {
+    return req.user; // silently ignore invalid viewAs
+  }
+
   try {
     const dealer = await User
       .findOne({ _id: viewAsId, isDeleted: false })

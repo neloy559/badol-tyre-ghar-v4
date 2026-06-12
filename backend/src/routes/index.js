@@ -27,7 +27,7 @@ router.get('/my/orders', protect, async (req, res) => {
   try {
     const page  = parseInt(req.query.page,  10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
-    const result = await ordersService.getDealerOrders(req.user.userId, page, limit);
+    const result = await ordersService.getDealerOrders(req.user.userId, page, limit, req.user);
     return sendResponse(res, 200, true, 'Orders fetched.', result.orders, {
       page: result.page, limit: result.limit,
       total: result.total,
@@ -40,7 +40,7 @@ router.get('/my/orders', protect, async (req, res) => {
 
 router.get('/my/orders/stats', protect, async (req, res) => {
   try {
-    const stats = await ordersService.getOrderStats(req.user.userId);
+    const stats = await ordersService.getOrderStats(req.user.userId, req.user);
     return sendResponse(res, 200, true, 'Stats fetched.', stats);
   } catch (err) {
     return sendResponse(res, err.statusCode || 500, false, err.message, null);

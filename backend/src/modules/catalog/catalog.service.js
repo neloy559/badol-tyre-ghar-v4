@@ -17,16 +17,22 @@ const CAMPAIGN_CACHE_TTL_MS = 60 * 1000;
 async function getActiveCampaigns() {
   const now = Date.now();
   if (!campaignCache || now - campaignCacheTimestamp > CAMPAIGN_CACHE_TTL_MS) {
-    const nowDate = new Date();
-    campaignCache = await Campaign.find({
-      isActive: true,
-      isDeleted: false,
-      startDate: { $lte: nowDate },
-      endDate: { $gte: nowDate },
-    })
-    .maxTimeMS(5000) // Security: Query timeout prevents resource exhaustion
-    .lean();
-    campaignCacheTimestamp = now;
+    try {
+      const nowDate = new Date();
+      campaignCache = await Campaign.find({
+        isActive: true,
+        isDeleted: false,
+        startDate: { $lte: nowDate },
+        endDate: { $gte: nowDate },
+      })
+      .maxTimeMS(5000) // Security: Query timeout prevents resource exhaustion
+      .lean();
+      campaignCacheTimestamp = now;
+    } catch (err) {
+      console.warn('[catalog] Campaign cache refresh failed:', err.message);
+      // Serve stale cache on DB failure — better than breaking all catalog requests
+      return campaignCache || [];
+    }
   }
   return campaignCache;
 }
@@ -82,7 +88,8 @@ async function getProducts(filters, user) {
     }
   }
   if (filters.search && filters.search.trim()) {
-    query.$text = { $search: filters.search.trim() };
+    const searchTerm = filters.search.trim().slice(0, 200); // Security: cap search length
+    query.$text = { $search: searchTerm };
   }
 
   const total = await Product.countDocuments(query);
@@ -95,7 +102,7 @@ async function getProducts(filters, user) {
     .lean();
 
   if (filters.search && filters.search.trim()) {
-    const normalizedTerm = filters.search.trim().toLowerCase();
+    const normalizedTerm = filters.search.trim().slice(0, 200).toLowerCase();
     SearchLog.findOneAndUpdate(
       { term: normalizedTerm },
       { $inc: { count: 1 }, $set: { resultCount: total, lastSearchedAt: new Date() } },
@@ -207,13 +214,24 @@ async function softDeleteProduct(id) {
 }
 
 async function bulkCreateProducts(array) {
+  if (!Array.isArray(array) || array.length === 0) {
+    return { created: 0, failed: 0, errors: [] };
+  }
+  if (array.length > 500) {
+    throw { statusCode: 400, message: 'Bulk import limited to 500 products per request.' };
+  }
   const results = { created: 0, failed: 0, errors: [] };
   for (const item of array) {
     try {
-      if (!item.slug) {
-        item.slug = generateSlug(item.name);
+      // Reuse the same whitelist as createProduct — no raw passthrough
+      const sanitized = {};
+      for (const key of PRODUCT_CREATE_FIELDS) {
+        if (item[key] !== undefined) sanitized[key] = item[key];
       }
-      await Product.create(item);
+      if (!sanitized.slug && sanitized.name) {
+        sanitized.slug = generateSlug(sanitized.name);
+      }
+      await Product.create(sanitized);
       results.created += 1;
     } catch (err) {
       results.failed += 1;
@@ -247,13 +265,25 @@ async function bulkMarkup({ categoryId, brandId, adjustmentType, adjustmentValue
   if (typeof adjustmentValue !== 'number' || isNaN(adjustmentValue) || !isFinite(adjustmentValue)) {
     throw { statusCode: 400, message: 'adjustmentValue must be a valid number.' };
   }
-  // Cap percent to -99..+200 and flat to -1,000,000..+1,000,000 to prevent absurd values
   if (adjustmentType === 'percent' && (adjustmentValue < -99 || adjustmentValue > 200)) {
     throw { statusCode: 400, message: 'Percent adjustment must be between -99 and 200.' };
   }
+
+  const mongoose = require('mongoose');
   const query = { isDeleted: false };
-  if (categoryId) query.category = categoryId;
-  if (brandId) query.brand = brandId;
+
+  if (categoryId) {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw { statusCode: 400, message: 'Invalid categoryId.' };
+    }
+    query.category = categoryId;
+  }
+  if (brandId) {
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+      throw { statusCode: 400, message: 'Invalid brandId.' };
+    }
+    query.brand = brandId;
+  }
   const products = await Product.find(query)
     .select('_id variants')
     .maxTimeMS(5000) // Security: Query timeout
