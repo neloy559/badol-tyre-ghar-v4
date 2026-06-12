@@ -12,10 +12,10 @@
 [![React](https://img.shields.io/badge/React-v19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-v6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel&logoColor=white)](https://badol-tyre-ghar.vercel.app)
-[![API on Railway](https://img.shields.io/badge/Backend-Railway-0B0D0E?logo=railway&logoColor=white)](https://badol-tyre-ghar-v4-production.up.railway.app/api/v1/health)
+[![API on Vercel](https://img.shields.io/badge/Backend-Vercel%20Serverless-000000?logo=vercel&logoColor=white)](https://badol-tyre-ghar.vercel.app/api/v1/health)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](#license)
 
-**[🌐 Live Demo](https://badol-tyre-ghar.vercel.app)** · **[⚡ API Health](https://badol-tyre-ghar-v4-production.up.railway.app/api/v1/health)** · **[📖 API Reference](backend/API_ROUTES_REFERENCE.md)** · **[🚀 Get Started](#getting-started)**
+**[🌐 Live Demo](https://badol-tyre-ghar.vercel.app)** · **[⚡ API Health](https://badol-tyre-ghar.vercel.app/api/v1/health)** · **[📖 API Reference](backend/API_ROUTES_REFERENCE.md)** · **[🚀 Get Started](#getting-started)**
 
 </div>
 
@@ -136,17 +136,20 @@ BTG v4 is a **modular monolith** — one deployable backend with clean internal 
 Browser
   │  HTTPS
   ▼
-Vercel  ─────────────  React SPA (static, CDN-distributed)
-  │  HTTPS API calls
-  ▼
-Railway  ────────────  Express API (Node.js, always-on)
-  │  Connection string
+Vercel  ─────────────  React SPA (frontend/) + Express API (api/)
+  │                    Same domain: badol-tyre-ghar.vercel.app
+  │  /api/v1/*  →  api/index.js  →  backend/src/app.js
+  │  /*         →  frontend/dist/index.html
+  │
+  │  MongoDB Atlas connection
   ▼
 MongoDB Atlas  ──────  Primary data store
   │  Media operations
   ▼
 Cloudinary  ─────────  Image storage and transformation
 ```
+
+Both the React SPA and the Express API are served from the same Vercel project. The `api/` folder at the repo root is Vercel's serverless entry point — it imports `backend/src/app.js` and exports it as a serverless function. No separate backend host is needed.
 
 ### Backend modules
 
@@ -378,7 +381,7 @@ All variables are documented with blank placeholder values in `backend/.env.exam
 
 ## API Overview
 
-**Base URL (production):** `https://badol-tyre-ghar-v4-production.up.railway.app/api/v1`
+**Base URL (production):** `https://badol-tyre-ghar.vercel.app/api/v1`
 
 **Base URL (local dev):** `http://localhost:3000/api/v1`
 
@@ -490,39 +493,43 @@ Component tests use `@testing-library/react` and test behaviour — what the use
 
 ## Deployment
 
-### Frontend → Vercel
+BTG v4 deploys entirely on **Vercel** — both the React SPA and the Express API live under the same project and domain.
 
 ```
-Root directory:  frontend/
-Build command:   npm run build
-Output dir:      dist
+badol-tyre-ghar.vercel.app/          → React SPA (frontend/dist)
+badol-tyre-ghar.vercel.app/api/v1/*  → Express API (api/index.js → backend/src/app.js)
 ```
 
-Set `VITE_API_URL` and `VITE_WHATSAPP_NUMBER` in Vercel project environment settings.
+### How it works
 
-### Backend → Railway
+Vercel's `api/` convention: any file inside `api/` at the repo root becomes a serverless function. `api/index.js` simply imports `backend/src/app.js` and exports it — so the full Express app runs as a Vercel serverless function.
+
+`vercel.json` handles routing:
+- API requests (`/api/*`) → handled by `api/index.js` natively
+- All other paths (`/*`) → rewritten to `index.html` for React Router
+
+### Vercel project settings
 
 ```
-Root directory:  backend/
-Start command:   node index.js
+Root directory:      frontend/
+Build command:       npm run build
+Output dir:          dist
 ```
 
-Set all backend environment variables in the Railway service dashboard. Never commit `.env` files.
-
-Production API: `https://badol-tyre-ghar-v4-production.up.railway.app`
+Set all environment variables in the Vercel project dashboard (both `VITE_*` frontend vars and all backend vars like `MONGODB_URI`, `JWT_SECRET`, etc.).
 
 ### Environment strategy
 
-| Environment | Frontend | Backend | Database |
-|---|---|---|---|
-| Development | `localhost:5173` | `localhost:3000` | Atlas dev cluster |
-| Production | Vercel domain | Railway domain | Atlas prod cluster |
+| Environment | URL | Database |
+|---|---|---|
+| Development | `localhost:5173` + `localhost:3000` | Atlas dev cluster |
+| Production | `badol-tyre-ghar.vercel.app` | Atlas prod cluster |
 
 Dev and prod never share a database.
 
 ### Scaling notes
 
-The backend is stateless by design — no in-memory session state, JWT is stateless, files go to Cloudinary, all state is in Atlas. Horizontal scaling requires no code changes.
+The backend runs as Vercel serverless functions — stateless by design. No in-memory session state, JWT is stateless, files go to Cloudinary, all persistent state is in Atlas.
 
 ---
 
