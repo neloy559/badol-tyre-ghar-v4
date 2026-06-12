@@ -11,10 +11,11 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://mongodb.com/atlas)
 [![React](https://img.shields.io/badge/React-v19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-v6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?logo=vercel&logoColor=white)](https://badol-tyre-ghar.vercel.app)
+[![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel&logoColor=white)](https://badol-tyre-ghar.vercel.app)
+[![API on Railway](https://img.shields.io/badge/Backend-Railway-0B0D0E?logo=railway&logoColor=white)](https://badol-tyre-ghar-v4-production.up.railway.app/api/v1/health)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](#license)
 
-**[🌐 Live Demo](https://badol-tyre-ghar.vercel.app)** · **[📖 API Reference](backend/API_ROUTES_REFERENCE.md)** · **[🚀 Get Started](#getting-started)**
+**[🌐 Live Demo](https://badol-tyre-ghar.vercel.app)** · **[⚡ API Health](https://badol-tyre-ghar-v4-production.up.railway.app/api/v1/health)** · **[📖 API Reference](backend/API_ROUTES_REFERENCE.md)** · **[🚀 Get Started](#getting-started)**
 
 </div>
 
@@ -377,7 +378,9 @@ All variables are documented with blank placeholder values in `backend/.env.exam
 
 ## API Overview
 
-**Base URL:** `http://localhost:3000/api/v1`
+**Base URL (production):** `https://badol-tyre-ghar-v4-production.up.railway.app/api/v1`
+
+**Base URL (local dev):** `http://localhost:3000/api/v1`
 
 All responses use a consistent envelope:
 
@@ -505,6 +508,8 @@ Start command:   node index.js
 ```
 
 Set all backend environment variables in the Railway service dashboard. Never commit `.env` files.
+
+Production API: `https://badol-tyre-ghar-v4-production.up.railway.app`
 
 ### Environment strategy
 
