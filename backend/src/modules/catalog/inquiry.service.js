@@ -2,8 +2,11 @@
 
 const Inquiry = require('./Inquiry.model');
 const Product = require('./Product.model');
+const mongoose = require('mongoose');
 const { createNotificationForAllAdmins } = require('../notifications/notifications.service');
 const { createOrderFromInquiry } = require('../orders/orders.service');
+
+const MAX_INQUIRY_ITEMS = 50;
 
 /**
  * buildWhatsappMessage — formats inquiry items into a WhatsApp message.
@@ -44,17 +47,38 @@ async function createInquiry({ user, items }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw { statusCode: 400, message: 'Inquiry must contain at least one item.' };
   }
+  if (items.length > MAX_INQUIRY_ITEMS) {
+    throw { statusCode: 400, message: `Inquiry cannot have more than ${MAX_INQUIRY_ITEMS} items.` };
+  }
 
-  // Validate each item
+  // Validate each item — check ObjectId, quantity, and that product exists
   for (const item of items) {
-    if (!item.productId) {
-      throw { statusCode: 400, message: 'Each item must have a productId.' };
+    if (!item.productId || !mongoose.Types.ObjectId.isValid(item.productId)) {
+      throw { statusCode: 400, message: 'Each item must have a valid productId.' };
     }
-    if (!item.variantSku) {
+    if (!item.variantSku || typeof item.variantSku !== 'string' || !item.variantSku.trim()) {
       throw { statusCode: 400, message: 'Each item must have a variantSku.' };
     }
-    if (item.quantity && item.quantity < 1) {
-      throw { statusCode: 400, message: 'Item quantity must be at least 1.' };
+    // Security: quantity must be a positive integer
+    const qty = item.quantity !== undefined ? item.quantity : 1;
+    if (!Number.isInteger(qty) || qty < 1) {
+      throw { statusCode: 400, message: 'Item quantity must be a positive integer.' };
+    }
+    item.quantity = qty;
+
+    // Security: verify product is visible, not deleted, and variant exists
+    const product = await Product.findOne({
+      _id: item.productId,
+      isVisible: true,
+      isDeleted: false,
+    }).select('_id variants').maxTimeMS(5000).lean();
+
+    if (!product) {
+      throw { statusCode: 400, message: `Product ${item.productId} is not available.` };
+    }
+    const variantExists = (product.variants || []).some(v => v.sku === item.variantSku.trim());
+    if (!variantExists) {
+      throw { statusCode: 400, message: `Variant SKU "${item.variantSku}" not found on product.` };
     }
   }
 

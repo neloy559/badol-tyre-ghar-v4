@@ -136,29 +136,51 @@ async function updateOrder(id, data) {
 }
 
 /**
- * getDealerOrders — orders for a specific dealer (for dealer-facing report).
+ * getDealerOrders — orders for a specific dealer.
+ * Security: requestingUser must be admin/editor OR the dealer themselves.
  */
-async function getDealerOrders(dealerId, page = 1, limit = 20) {
+async function getDealerOrders(dealerId, page = 1, limit = 20, requestingUser = null) {
+  // Authorization: dealers can only see their own orders
+  if (requestingUser && requestingUser.role !== 'admin' && requestingUser.role !== 'editor') {
+    if (requestingUser.userId.toString() !== dealerId.toString()) {
+      throw { statusCode: 403, message: 'Access denied.' };
+    }
+  }
+
+  const cappedLimit = Math.min(limit, 50); // Security: cap results
   const query = { dealer: dealerId, isDeleted: false };
-  const skip  = (page - 1) * limit;
+  const skip  = (page - 1) * cappedLimit;
   const total = await Order.countDocuments(query).maxTimeMS(5000);
 
   const orders = await Order.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(limit)
+    .limit(cappedLimit)
     .maxTimeMS(5000)
     .lean();
 
-  return { orders, total, page, limit };
+  return { orders, total, page, limit: cappedLimit };
 }
 
 /**
  * getOrderStats — summary stats for a dealer (total orders, total spend, unpaid).
+ * Security: requestingUser must be admin/editor OR the dealer themselves.
  */
-async function getOrderStats(dealerId) {
+async function getOrderStats(dealerId, requestingUser = null) {
+  // Authorization: dealers can only see their own stats
+  if (requestingUser && requestingUser.role !== 'admin' && requestingUser.role !== 'editor') {
+    if (requestingUser.userId.toString() !== dealerId.toString()) {
+      throw { statusCode: 403, message: 'Access denied.' };
+    }
+  }
+
+  const mongoose = require('mongoose');
+  if (!mongoose.Types.ObjectId.isValid(dealerId)) {
+    throw { statusCode: 400, message: 'Invalid dealer ID.' };
+  }
+
   const [totals] = await Order.aggregate([
-    { $match: { dealer: require('mongoose').Types.ObjectId.createFromHexString(dealerId), isDeleted: false } },
+    { $match: { dealer: new mongoose.Types.ObjectId(dealerId), isDeleted: false } },
     { $group: {
       _id: null,
       totalOrders:  { $sum: 1 },
@@ -166,7 +188,7 @@ async function getOrderStats(dealerId) {
       totalPaid:    { $sum: '$amountPaid' },
       pendingCount: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
     }},
-  ]);
+  ]).option({ maxTimeMS: 5000 });
 
   return totals || { totalOrders: 0, totalSpend: 0, totalPaid: 0, pendingCount: 0 };
 }

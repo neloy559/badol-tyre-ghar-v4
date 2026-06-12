@@ -10,12 +10,18 @@ const app = express();
 // Without this, rate limiter sees the proxy IP instead of the real client IP.
 app.set('trust proxy', 1);
 
-// -- Security headers (basic protection without requiring helmet package)
+// -- Security headers (no external dependency required)
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // HSTS: enforce HTTPS for 1 year in production
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  // CSP: this is an API — no HTML, so lock it down
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
   next();
 });
 
