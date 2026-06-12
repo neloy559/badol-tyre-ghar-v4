@@ -274,7 +274,7 @@ exports.exportCsv = async (req, res) => {
         ].map(val => '"' + String(val).replace(/"/g,'""') + '"').join(','));
       }
     }
-    res.send([header, ...rows].join('\\n'));
+    res.send([header, ...rows].join('\n'));
   } catch (err) {
     return handleError(res, err);
   }

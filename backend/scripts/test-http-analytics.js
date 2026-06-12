@@ -1,5 +1,23 @@
+/**
+ * Manual HTTP smoke test for the analytics endpoint.
+ *
+ * Usage:
+ *   ADMIN_PHONE=01XXXXXXXXX ADMIN_PASSWORD=yourpassword node scripts/test-http-analytics.js
+ *
+ * Requires the backend to be running on localhost:3000.
+ */
+
 'use strict';
+
 const http = require('http');
+
+const ADMIN_PHONE    = process.env.ADMIN_PHONE;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_PHONE || !ADMIN_PASSWORD) {
+  console.error('❌ ADMIN_PHONE and ADMIN_PASSWORD are required environment variables.');
+  process.exit(1);
+}
 
 function httpPost(path, body) {
   return new Promise((resolve, reject) => {
@@ -7,7 +25,7 @@ function httpPost(path, body) {
     const opts = {
       hostname: 'localhost', port: 3000,
       path: '/api/v1' + path, method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
     };
     const req = http.request(opts, res => {
       let out = '';
@@ -25,7 +43,7 @@ function httpGet(path, token) {
     const opts = {
       hostname: 'localhost', port: 3000,
       path: '/api/v1' + path, method: 'GET',
-      headers: token ? { Authorization: 'Bearer ' + token } : {}
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
     };
     const req = http.request(opts, res => {
       let out = '';
@@ -38,21 +56,19 @@ function httpGet(path, token) {
 }
 
 async function main() {
-  // Login
-  const login = await httpPost('/auth/login', { phone: '01700000000', password: 'admin123' });
+  const login = await httpPost('/auth/login', { phone: ADMIN_PHONE, password: ADMIN_PASSWORD });
   console.log('Login:', login.status, login.body.message);
-  
+
   if (login.status !== 200) {
-    console.log('Login failed:', login.body.message);
+    console.error('Login failed:', login.body.message);
     process.exit(1);
   }
-  
+
   const token = login.body.data.accessToken;
-  
-  // Test analytics
+
   const analytics = await httpGet('/admin/analytics/summary', token);
   console.log('Analytics:', analytics.status, analytics.body.message);
-  
+
   if (analytics.status === 200) {
     const d = analytics.body.data;
     console.log('  Products:', d.totalProducts);
@@ -61,7 +77,7 @@ async function main() {
     console.log('  Pending:', d.pendingRegistrations);
     console.log('  BrandChart:', d.productsByBrand?.length, 'items');
   }
-  
+
   process.exit(0);
 }
 
