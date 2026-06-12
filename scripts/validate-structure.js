@@ -82,6 +82,7 @@ function checkRoot() {
     '.github', '.githooks', '.kiro', '.git', '.vscode',
     'node_modules',
     '.vercel', // gitignored — local Vercel CLI metadata, never committed
+    'docs',    // project documentation — screenshots, architecture notes
   ];
 
   let violations = 0;
