@@ -21,7 +21,10 @@ const { getDiscountPercent } = require('./tierPricingService');
  * @returns {Promise<number>} Final computed price
  */
 async function computePrice(variant, user, activeCampaigns = [], product = null) {
-  const isDealerRole = user && (user.role === 'dealer' || user.role === 'sales_partner');
+  // Security: pending/rejected dealers must NOT receive wholesale pricing.
+  // A dealer is only eligible if explicitly approved — role alone is insufficient.
+  const isDealerRole = user && (user.role === 'dealer' || user.role === 'sales_partner') &&
+                       user.registrationStatus === 'approved';
   const isAdminRole  = user && (user.role === 'admin' || user.role === 'editor');
 
   // Step 1: Base price selection
